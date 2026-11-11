@@ -47,6 +47,24 @@ a shell-layer alternative (wrapper, env var, symlink, post-package step). If
 truly impossible, upstream the change first (file an issue / PR against
 deepfounder-ai/desigma) and sync it down.
 
+### Temporary carried `crates/` patches (pending upstream merge)
+
+Two upstream PRs were merged into `main` here before upstream reviewed them,
+so `crates/` temporarily deviates from `upstream/main`. These are upstream
+commits verbatim (reviewed there as PRs), and the next sync that lands them
+upstream makes `crates/` byte-identical again:
+
+| Upstream PR | Local branch (merged) | Content |
+|---|---|---|
+| deepfounder-ai/desigma#68 | `open-link-handling` | `desigma://open` focus links (fixes #67) |
+| deepfounder-ai/desigma#70 | `app-title-override` | opt-in `DESIGMA_APP_TITLE` display title (fixes #69) |
+
+When either PR merges upstream, drop the local copy during the next sync
+(`git rebase --onto upstream/main` for the shell commits, or cherry-pick the
+remaining shell-layer commits) so the byte-identical rule is restored. Until
+then `git diff upstream/main HEAD -- crates/` shows exactly these two PR
+diffs and nothing else.
+
 ## Breaking changes in alpha
 
 desigma is early alpha; the document model and CLI surface can change between

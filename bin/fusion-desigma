@@ -38,4 +38,8 @@ if [ ! -x "$bin" ]; then
 fi
 
 echo "fusion-desigma: starting (base dir $fusion_base)"
+# Display title only (window title, About, header); persistence identity stays
+# "desigma" so stored state is never forked. Needs upstream PR #70 (merged as
+# the app-title-override patch on this fork).
+export DESIGMA_APP_TITLE="${DESIGMA_APP_TITLE:-fusion-desigma}"
 exec "$bin" "$@"

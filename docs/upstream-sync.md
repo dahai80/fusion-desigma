@@ -1,0 +1,106 @@
+# Upstream sync discipline
+
+fusion-desigma is a shell-layer fork of [deepfounder-ai/desigma](https://github.com/deepfounder-ai/desigma).
+The heart stays upstream; this repository only maintains the fusion shell
+(branding, packaging, defaults, service integration).
+
+## Policy
+
+- **Cadence**: weekly check, plus on-demand (an upstream fix or feature we need).
+- **Upstream remote** is wired as `upstream` (plus `upstream-ssh` over the SSH
+  transport; github.com:443 can be unreachable from some networks while
+  api.github.com and SSH work):
+
+  ```sh
+  git remote add upstream https://github.com/deepfounder-ai/desigma.git
+  git remote add upstream-ssh git@github.com:deepfounder-ai/desigma.git
+  git fetch upstream-ssh
+  ```
+
+- **Fast-forward only.** `main` must always be a fast-forward of
+  `upstream/main`. Never rewrite or cherry-pick over upstream history.
+
+  ```sh
+  git checkout main
+  git merge --ff-only upstream/main
+  git push origin main
+  ```
+
+- **Pin**: every release tag records the upstream commit it carries
+  (`crates/` are byte-identical with `upstream/main` at that commit).
+
+## Carried local patches
+
+Upstream files are **never** modified inside `crates/`. All fusion adaptation
+lives in shell-layer files that upstream does not have, so merges stay
+conflict-free by construction:
+
+| Path | Purpose |
+|---|---|
+| `NOTICE` | upstream attribution (MIT / Apache-2.0, Inter font) |
+| `start.sh` | supervisor-compatible lifecycle script (start/stop/restart/status/log) |
+| `bin/fusion-desigma` | launcher: fusion defaults, `~/.fusion-desigma` layout |
+| `scripts/package-fusion-macos.sh` | branded macOS packaging wrapper |
+| `.github/workflows/release.yml` | macOS job calls the branded wrapper instead of the upstream packaging script (single-line carried patch; everything else matches upstream) |
+| `docs/fusion-shell.md` | shell-layer architecture and integration notes |
+| `docs/upstream-sync.md` | this policy |
+
+If a future change seems to require editing an upstream file, stop and design
+a shell-layer alternative (wrapper, env var, symlink, post-package step). If
+truly impossible, upstream the change first (file an issue / PR against
+deepfounder-ai/desigma) and sync it down.
+
+### Upstreamed shell-adjacent changes
+
+Two capabilities the fork needed first were upstreamed instead of carried:
+`desigma://open` links (#68, upstream commit `4b261bb`) and the opt-in
+`DESIGMA_APP_TITLE` display title (#70, upstream commit `2f4d7d7` plus a
+follow-up that keeps the desigma origin visible in About). `crates/` is
+byte-identical with `upstream/main` again.
+
+### Trademark
+
+Upstream [TRADEMARKS.md](https://github.com/deepfounder-ai/desigma/blob/main/TRADEMARKS.md):
+a fork product name confusingly similar to "desigma" needs written
+permission. "based on desigma" attribution is always fine and is kept
+visible (NOTICE, About). Resolve "fusion-desigma" naming with upstream
+before any public distribution beyond the fusion workspace.
+
+## Breaking changes in alpha
+
+desigma is early alpha; the document model and CLI surface can change between
+alpha tags. Sync checklist:
+
+1. Read the upstream release notes / commit log since the pinned commit.
+2. Run the full gate after every sync: `cargo test --workspace --locked`,
+   `cargo clippy --workspace --all-targets --locked -- -D warnings`.
+3. Re-verify the shell scripts still match upstream reality (binary names,
+   packaging artifact names, CLI flags used by `start.sh` and
+   `scripts/package-fusion-macos.sh`).
+4. Tag a new `-fusion.N` release (see "Versioning").
+
+## Versioning
+
+Fork releases are tagged `<upstream-tag>-fusion.<n>`, e.g.
+`v0.1.0-alpha.17-fusion.1` — the upstream base is visible in the tag itself.
+The `Cargo.toml` version stays upstream-owned and is not bumped in this fork.
+
+## CI on the fork
+
+GitHub does not run push-triggered workflows on this fork (0 runs on any
+push, including tags, even with Actions enabled). Releases are therefore cut
+by dispatching the Release workflow on the tag ref, which also satisfies the
+tag-only publish gate:
+
+```sh
+git tag -f -a v0.1.0-alpha.17-fusion.1 <commit> && git push origin v0.1.0-alpha.17-fusion.1
+gh workflow run release.yml --ref v0.1.0-alpha.17-fusion.1
+```
+
+Re-dispatching the **same** tag fails at the publish step (the action cannot
+update an existing release: `already_exists`). Delete the release first
+(`gh release delete <tag> --yes`), keep the tag, then dispatch again.
+
+CI (ci.yml) cannot gate pushes here the way it does upstream; run it via
+`gh workflow run ci.yml` after meaningful changes, and rely on the local
+`cargo test --workspace --locked` + `cargo clippy -D warnings` gate anyway.

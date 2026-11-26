@@ -102,6 +102,13 @@ Re-dispatching the **same** tag fails at the publish step (the action cannot
 update an existing release: `already_exists`). Delete the release first
 (`gh release delete <tag> --yes`), keep the tag, then dispatch again.
 
+A tag-triggered run uses the **workflow file at the tagged commit**, not
+`main`. Workflow fixes made after tagging have no effect until the tag is
+moved onto them (`git tag -f <tag> <fix-commit> && git push -f origin <tag>`,
+delete the release first if one exists). The release job also has no
+`actions/checkout` upstream — any repo script it must run needs the fork's
+checkout step.
+
 CI (ci.yml) cannot gate pushes here the way it does upstream; run it via
 `gh workflow run ci.yml` after meaningful changes, and rely on the local
 `cargo test --workspace --locked` + `cargo clippy -D warnings` gate anyway.

@@ -41,7 +41,8 @@ conflict-free by construction:
 | `start.sh` | supervisor-compatible lifecycle script (start/stop/restart/status/log) |
 | `bin/fusion-desigma` | launcher: fusion defaults, `~/.fusion-desigma` layout |
 | `scripts/package-fusion-macos.sh` | branded macOS packaging wrapper |
-| `.github/workflows/release.yml` | macOS job calls the branded wrapper instead of the upstream packaging script (single-line carried patch; everything else matches upstream) |
+| `.github/workflows/release.yml` | macOS job calls the branded wrapper instead of the upstream packaging script, and the release job renames the Windows/Linux artifacts to `fusion-desigma-*` via `scripts/package-fusion-rename.sh` (release notes filenames updated to match). Everything else matches upstream. |
+| `scripts/package-fusion-rename.sh` | release-job helper: renames `dist/desigma-*` to `fusion-desigma-*` and rewrites the per-artifact `.sha256` files |
 | `docs/fusion-shell.md` | shell-layer architecture and integration notes |
 | `docs/upstream-sync.md` | this policy |
 

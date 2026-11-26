@@ -164,6 +164,10 @@ jobs:
     permissions:
       contents: write
     steps:
+      # fusion fork (dahai80/fusion-desigma#1): the branding step below runs a
+      # script from the repo, which the upstream release job never needed.
+      - uses: actions/checkout@v4
+
       - uses: actions/download-artifact@v4
         with:
           path: dist

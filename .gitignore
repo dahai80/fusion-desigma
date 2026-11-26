@@ -11,3 +11,6 @@
 
 # Private design files used for local import checks: never committed
 /reference/*.fig
+
+# Local runtime logs (launchers, smoke tests): never committed
+/logs/

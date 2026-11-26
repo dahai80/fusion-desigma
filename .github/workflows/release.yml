@@ -140,7 +140,11 @@ jobs:
         run: test "$(target/aarch64-apple-darwin/release/desigma --version)" = "desigma ${DESIGMA_VERSION}"
 
       - name: Package desigma.app (.dmg and .tar.gz)
-        run: scripts/package-macos.sh "${{ steps.version.outputs.version }}"
+        # fusion fork (dahai80/fusion-desigma#1): shell-layer wrapper — calls the
+        # upstream script, then rebrands the bundle (CFBundleName/DisplayName) and
+        # renames the artifacts to fusion-desigma-*. The only carried patch in
+        # this workflow; tracked in docs/upstream-sync.md.
+        run: scripts/package-fusion-macos.sh "${{ steps.version.outputs.version }}"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -160,10 +164,20 @@ jobs:
     permissions:
       contents: write
     steps:
+      # fusion fork (dahai80/fusion-desigma#1): the branding step below runs a
+      # script from the repo, which the upstream release job never needed.
+      - uses: actions/checkout@v4
+
       - uses: actions/download-artifact@v4
         with:
           path: dist
           merge-multiple: true
+
+      # fusion fork (dahai80/fusion-desigma#1): brand the Windows/Linux artifact
+      # names (macOS is branded in its packaging step). Fork-only script; tracked
+      # in docs/upstream-sync.md.
+      - name: Brand artifact names
+        run: scripts/package-fusion-rename.sh dist
 
       - name: Combine checksums
         working-directory: dist
@@ -181,10 +195,10 @@ jobs:
 
             Download the file for your platform below. These builds are **not code-signed yet**, so the first launch shows a warning:
 
-            - **macOS (Apple Silicon and Intel):** download `desigma-<version>-macos.dmg`, open it and drag **desigma** to **Applications**. The first time, open it from Applications, then go to **System Settings → Privacy & Security** and click **Open Anyway**. Or run `xattr -dr com.apple.quarantine /Applications/desigma.app`.
-            - **Windows (recommended):** run `desigma-<version>-x86_64-windows-setup.exe`. It installs for your user without an admin prompt, adds a Start Menu entry and can associate `.desigma` files. In the SmartScreen dialog, click **More info → Run anyway**.
-            - **Windows (portable):** unzip `desigma-<version>-x86_64-pc-windows-msvc.zip` and run `desigma.exe`; same SmartScreen steps.
-            - **Linux:** unpack `desigma-<version>-x86_64-unknown-linux-gnu.tar.gz`, then run `./install.sh` (no sudo) or just `./desigma`.
+            - **macOS (Apple Silicon and Intel):** download `fusion-desigma-<version>-macos.dmg`, open it and drag **desigma** to **Applications**. The first time, open it from Applications, then go to **System Settings → Privacy & Security** and click **Open Anyway**. Or run `xattr -dr com.apple.quarantine /Applications/desigma.app`.
+            - **Windows (recommended):** run `fusion-desigma-<version>-x86_64-windows-setup.exe`. It installs for your user without an admin prompt, adds a Start Menu entry and can associate `.desigma` files. In the SmartScreen dialog, click **More info → Run anyway**.
+            - **Windows (portable):** unzip `fusion-desigma-<version>-x86_64-pc-windows-msvc.zip` and run `desigma.exe`; same SmartScreen steps.
+            - **Linux:** unpack `fusion-desigma-<version>-x86_64-unknown-linux-gnu.tar.gz`, then run `./install.sh` (no sudo) or just `./desigma`.
 
             Full instructions: [docs/install.md](https://github.com/deepfounder-ai/desigma/blob/main/docs/install.md). Check downloads against `SHA256SUMS`.
           prerelease: ${{ contains(github.ref_name, '-') }}
